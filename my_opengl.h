@@ -143,9 +143,11 @@ private:
 
     QOpenGLVertexArrayObject VAO_kuang;          //VAO顶点数组对象
     QOpenGLVertexArrayObject VAO_model;
+    QOpenGLVertexArrayObject VAO_sample;
 
     QOpenGLBuffer  VBO_kuang;                   //VBO顶点缓冲对象
     QOpenGLBuffer  VBO_model;
+    QOpenGLBuffer  VBO_sample;
 
     QOpenGLShaderProgram *my_shader_kuang;          //绘制框
     QOpenGLShaderProgram *my_shader_model;          //着色器 绘制模型
