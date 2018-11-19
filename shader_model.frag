@@ -16,7 +16,7 @@ struct Light
 
 varying vec3 frag_normal;       //法向量
 varying vec3 frag_pos;          //位置信息
-varying vec3 objectColor;      //物体颜色
+varying vec3 objectColor;       //物体颜色
 
 uniform vec3 viewpos;          //相机位置
 
@@ -24,16 +24,14 @@ vec3 light_pos_1=vec3( 17.5, 0.0 ,0.0);
 vec3 light_pos_2=vec3(-17.5, 0.0 ,0.0);
 vec3 light_pos_3=vec3(0.0, 0.0 , 17.5);
 vec3 light_pos_4=vec3(0.0, 0.0 ,-17.5);
-vec3 light_pos_5=vec3(0.0, 20.0,  0.0);
-vec3 light_pos_6=vec3(0.0 ,-20.0, 0.0);
 
 const float  specularStrength = 0.5;                     //镜面光照因子
-const float  ambientStrength = 0.5;                       //环境光照因子
+const float  ambientStrength = 0.5;                      //环境光照因子
 
 float Diff(vec3 lightpos);
 float Spec(vec3 lightpos);
 
-vec3 norm = normalize(frag_normal);                               //法线标准化
+vec3 norm = normalize(frag_normal);                       //法线标准化
 
 Material material;         //材质
 Light light_mine;          //光照权重
@@ -47,7 +45,7 @@ void main(void)
 
     light_mine.ambient=vec3(0.2,0.2,0.2);
     light_mine.diffuse=vec3(0.7,0.7,0.7);
-    light_mine.specular=vec3(1.0,1.0,1.0);
+    light_mine.specular=vec3(0.0,0.0,0.0);
 
     vec3 ambient = light_mine.ambient * material.ambient;                 //环境光照
 
@@ -57,7 +55,7 @@ void main(void)
     float specu=(Spec(light_pos_1) + Spec(light_pos_2) + Spec(light_pos_3)+Spec(light_pos_4));
     vec3 specular= light_mine.diffuse * (specu * material.specular);
 
-    vec3 result = ambient + diffuse +specular;
+    vec3 result = ambient + diffuse;
     gl_FragColor = vec4(result, 1.0);
 
 }

@@ -39,6 +39,8 @@ public:
     float size_Y()const{return y_max-y_min;}  //返回Y轴上长度
     float size_Z()const{return z_max-z_min;}  //返回Z轴上长度
 
+    float samples_min_y()const {return z_max-z_mid-10.0f;}
+
     float min_y(float num)const //获得将模型置于底部的偏移量
     {
         if(num!=1)
@@ -46,6 +48,8 @@ public:
         else
             return (y_max-y_mid)/10.0f-9.5f;
     }
+
+    float samples_mid_z()const{return z_mid;}
     float mid_y()const {return y_mid/10.0;}  //获得y中心坐标
     float mid_x()const {return x_mid/10.0;}  //获得x中心坐标
     float mid_z()const {return z_mid/10.0;}   //获得z中心坐标

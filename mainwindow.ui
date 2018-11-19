@@ -20,9 +20,9 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>6</x>
+      <x>326</x>
       <y>4</y>
-      <width>1021</width>
+      <width>701</width>
       <height>491</height>
      </rect>
     </property>
@@ -527,6 +527,24 @@
     </property>
     <property name="text">
      <string>0</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_6">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>310</y>
+      <width>121</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>20</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>支撑生成</string>
     </property>
    </widget>
   </widget>

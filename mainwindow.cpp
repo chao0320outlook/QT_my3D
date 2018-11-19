@@ -779,5 +779,9 @@ void MainWindow::load_sample_models()
          model_size();  //寻找模型三轴最大最小点
          ui->openGLWidget->load_sample_models(sample_model);
      }
+}
 
+void MainWindow::on_pushButton_6_clicked()
+{
+    ui->openGLWidget->set_draw_suppports_true();
 }

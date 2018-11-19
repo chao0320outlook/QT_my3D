@@ -50,9 +50,8 @@ public:
 
 private:
     QVector3D m_position;  //位置
+    QVector3D m_color={1.0,0.0,0.0};    //颜色
     QVector3D m_normal;   //法向量
-
-    QVector3D m_color={0.3,0.3,0.3};    //颜色
     QVector2D m_texture;   //纹理
 };
 

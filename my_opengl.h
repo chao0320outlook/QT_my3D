@@ -110,7 +110,7 @@ public:
 
     //读入支撑样本
     void load_sample_models(Model model);
-
+    void set_draw_suppports_true(){draw_suppports=true;}
     //设置变换
     void set_transform(Transform3D tran){m_transform[1]=tran;}
 
@@ -136,6 +136,7 @@ private:
     bool flag_2=false;
     bool show_red=false;                   //是否显示需支撑位置
     bool show_red_pre=false;               //上次存储值
+    bool draw_suppports=false;                   //绘制支撑环开启
 
     QVector<bool> normal_bool;             //是否需要支撑点集
     QVector<Model> sample_models;          //支撑样本

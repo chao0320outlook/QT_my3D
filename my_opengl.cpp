@@ -22,7 +22,7 @@ My_Opengl::My_Opengl(QWidget *parent):QOpenGLWidget(parent)
 
     connect(this, SIGNAL(frameSwapped()), this, SLOT(update()));  //必须
 
-    m_camera.setTranslation(0.0f,6.0f,32.0f);
+    m_camera.setTranslation(0.0f,0.0f,32.0f);
     m_camera.setRotation(-12.0f,1.0f,0.0f,0.0f);
 }
 
@@ -31,14 +31,14 @@ My_Opengl::~My_Opengl()
     teardownGL();
 }
 
-
 void My_Opengl::load_sample_models(Model model)
 {
     Transform3D trans;
     trans.setScale(0.1f,0.1f,1.0f);//基础变形，缩小10倍
-    trans.setTranslation_mid(-model.mid_x(),-model.mid_y(),-model.mid_z()); //将模型移动到正中心变换
+    trans.setTranslation_mid(-model.mid_x(),-model.mid_y(),-model.samples_mid_z()); //将模型移动到正中心变换
     trans.rotate(90.0,1,0,0);
-    sample_move_to_bottom=model.min_y(1.0);
+
+    sample_move_to_bottom=model.samples_min_y();
     trans.setTranslation(0.0f,sample_move_to_bottom,0.0f); //使模型置于底部
 
     for(auto &i :model.vertex_2_of_model())
@@ -63,9 +63,14 @@ void My_Opengl::set_samples_trans()
     {
         for(auto &j :sample_models[0].vertex_2_of_model())
         {
-           QVector3D location= samples_trans[i].toMatrix()*j.position();
-           QVector3D normal=samples_trans[i].toMatrix()*j.position();
-           supports.push_back( Vertex(location,normal));
+            //得到变换后位置坐标
+           QVector3D location = samples_trans[i].toMatrix()*j.position();
+
+           //得到变换后法向量
+           QMatrix3x3 normal_c = samples_trans[i].toMatrix().normalMatrix();
+           QVector3D vector_mine=QMatrix3x3_model(j.normal(),normal_c);
+           //添加进新模型
+           supports.push_back( Vertex(location,vector_mine));
         }
     }
 }
@@ -137,8 +142,6 @@ void My_Opengl::initializeGL_kaung()
 }
 void My_Opengl::initializeGL_sample()
 {
-    set_samples_trans();
-
     if(!VAO_sample.isCreated())
         VAO_sample.create();       //创建VAO
     VBO_sample.create();             //创建VBO
@@ -199,15 +202,21 @@ void My_Opengl::initializeGL()
 
     shader_load();
     initializeGL_kaung();
-    initializeGL_sample();
 }
 
 void My_Opengl::paintGL()
 {
+    // initializeGL_model(); initializeGL_sample(); 只能放这里
     if(flag_2)
     {
         initializeGL_model();
         flag_2=false;
+    }
+    if(draw_suppports)
+    {
+        set_samples_trans();
+        initializeGL_sample();
+        draw_suppports=false;
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -215,7 +224,7 @@ void My_Opengl::paintGL()
 
     //绘制框
     Draw_kuang();
-    Draw_samples();
+
     //绘制STL模型
     if(model_readied)
     {
@@ -229,6 +238,9 @@ void My_Opengl::paintGL()
         }
         Draw_model();
     }
+    if(supports.size_vertex())
+        Draw_samples();
+
 }
 
 //绘制打印框
@@ -294,7 +306,6 @@ void My_Opengl::Draw_model()
     VAO_model.release();
     my_shader_model->release();
 }
-
 
 //更新normal_bool
 void My_Opengl::update_normal()
@@ -405,7 +416,6 @@ void My_Opengl::update()
             {
                 auto y_trans=cos(camera_y * pi_mine)*y_move_to_bottom;
                 auto z_trans=sin(camera_y * pi_mine)*y_move_to_bottom;
-
                 m_transform[1].setTranslation(0.0,y_trans,z_trans);
             }
 
