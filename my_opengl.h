@@ -40,6 +40,7 @@ public:
     void shader_load();
     void initializeGL_kaung();
     void initializeGL_model();
+    void initializeGL_sample();
     void initializeGL();
     void resizeGL(int width, int height);
     void paintGL();

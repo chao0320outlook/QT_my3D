@@ -118,11 +118,11 @@ void My_Opengl::initializeGL_sample()
     //模型载入缓冲区
     if(model_readied)
     {
-        if(!VAO_model.isCreated())
-            VAO_model.create();       //创建VAO
-        VBO_model.create();             //创建VBO
-        VAO_model.bind();             //绑定VAO
-        VBO_model.bind();               //绑定VBO
+        if(!VAO_sample.isCreated())
+            VAO_sample.create();       //创建VAO
+        VBO_sample.create();             //创建VBO
+        VAO_sample.bind();             //绑定VAO
+        VBO_sample.bind();               //绑定VBO
 
         my_shader_model->bind();
         my_shader_model->enableAttributeArray(0);
@@ -132,11 +132,11 @@ void My_Opengl::initializeGL_sample()
         my_shader_model->setAttributeBuffer(1, GL_FLOAT, Vertex::colorOffset(), Vertex::ColorTupleSize, Vertex::stride());
         my_shader_model->setAttributeBuffer(2, GL_FLOAT, Vertex::normalOffset(), Vertex::NormalTupleSize, Vertex::stride());
 
-        VBO_model.setUsagePattern(QOpenGLBuffer::StaticDraw);
+        VBO_sample.setUsagePattern(QOpenGLBuffer::StaticDraw);
 
-        VBO_model.allocate(begin(models[0].vertex_2_of_model()),models[0].size_vertex()*sizeof(Vertex));
-        VBO_model.release();           //解绑VBO
-        VAO_model.release();         //解绑VAO
+        VBO_sample.allocate(begin(models[0].vertex_2_of_model()),models[0].size_vertex()*sizeof(Vertex));
+        VBO_sample.release();           //解绑VBO
+        VAO_sample.release();         //解绑VAO
     }
     my_shader_model->release();       //解绑着色器
 }

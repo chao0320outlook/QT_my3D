@@ -26,19 +26,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp \
+    mainwindow.cpp \
     my_opengl.cpp \
     transform_3d.cpp \
     camera.cpp \
     input.cpp \
-    mesh.cpp \
-    camera.cpp \
-    input.cpp \
-    main.cpp \
-    mainwindow.cpp \
-    mesh.cpp \
-    my_opengl.cpp \
-    transform_3d.cpp
+    mesh.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -50,57 +43,15 @@ HEADERS += \
     mesh.h \
     model.h \
     my_sample_model.h \
-    camera.h \
-    input.h \
-    mainwindow.h \
-    mesh.h \
-    model.h \
-    my_opengl.h \
-    my_sample_model.h \
-    transform_3d.h \
-    vertex.h
+    camera.h
 
 FORMS += \
-        mainwindow.ui \
-    mainwindow.ui
+        mainwindow.ui
 
 RESOURCES += \
     shaders.qrc \
-    images.qrc \
-    images.qrc \
-    shaders.qrc
+    images.qrc
 
-DISTFILES += \
-    android/AndroidManifest.xml \
-    android/gradle/wrapper/gradle-wrapper.jar \
-    android/gradlew \
-    android/res/values/libs.xml \
-    android/build.gradle \
-    android/gradle/wrapper/gradle-wrapper.properties \
-    android/gradlew.bat \
-    Sample_model \
-    column.stl \
-    android/AndroidManifest.xml \
-    android/gradle/wrapper/gradle-wrapper.jar \
-    android/gradlew \
-    android/res/values/libs.xml \
-    images/new_1.bmp \
-    images/open_1.bmp \
-    images/grass.png \
-    images/vector_1.png \
-    images/vector_1.psd \
-    android/gradle/wrapper/gradle-wrapper.properties \
-    android/build.gradle \
-    android/gradlew.bat \
-    Sample_model \
-    shader.frag \
-    shader_model.frag \
-    shader.vert \
-    shader_model.vert \
-    android/gradle.properties \
-    android/local.properties
-
-ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 
 SUBDIRS += \
     My_3D_1.pro
