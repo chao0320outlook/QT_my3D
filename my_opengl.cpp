@@ -35,15 +35,39 @@ My_Opengl::~My_Opengl()
 void My_Opengl::load_sample_models(Model model)
 {
     Transform3D trans;
-    trans.setScale(0.1f,0.1f,0.1f);//基础变形，缩小10倍
+    trans.setScale(0.1f,0.1f,1.0f);//基础变形，缩小10倍
     trans.setTranslation_mid(-model.mid_x(),-model.mid_y(),-model.mid_z()); //将模型移动到正中心变换
+    trans.rotate(90.0,1,0,0);
+    sample_move_to_bottom=model.min_y(1.0);
+    trans.setTranslation(0.0f,sample_move_to_bottom,0.0f); //使模型置于底部
 
     for(auto &i :model.vertex_2_of_model())
     {
         i.setPosition(trans.toMatrix()*i.position());
     }
-
     sample_models.push_back(model);
+}
+
+//支撑整合为模型
+void My_Opengl::set_samples_trans()
+{
+    QVector<QVector3D> sample_trans_x_z={{6,0,6},{6,0,-6},{-6,0,6},{-6,0,-6}};
+    for(int i=0;i!=4;++i)
+    {
+        Transform3D trans;
+        trans.setTranslation(sample_trans_x_z[i]);
+        samples_trans.push_back(trans);
+    }
+    //合成为一整个模型
+    for(int i=0;i!=samples_trans.size();++i)
+    {
+        for(auto &j :sample_models[0].vertex_2_of_model())
+        {
+           QVector3D location= samples_trans[i].toMatrix()*j.position();
+           QVector3D normal=samples_trans[i].toMatrix()*j.position();
+           supports.push_back( Vertex(location,normal));
+        }
+    }
 }
 
 void My_Opengl::shader_load()
@@ -85,7 +109,6 @@ void My_Opengl::shader_load()
     my_viepos=my_shader_model->uniformLocation("viewpos");
     my_shader_model->release();
 }
-
 void My_Opengl::initializeGL_kaung()
 {
     //QOpenGLVertexArrayObject不能使用vector存储，原因不明
@@ -112,35 +135,31 @@ void My_Opengl::initializeGL_kaung()
 
     texture[0]=new QOpenGLTexture(QImage(QString(":images/vector_1")).mirrored());
 }
-
 void My_Opengl::initializeGL_sample()
 {
-    //模型载入缓冲区
-    if(model_readied)
-    {
-        if(!VAO_sample.isCreated())
-            VAO_sample.create();       //创建VAO
-        VBO_sample.create();             //创建VBO
-        VAO_sample.bind();             //绑定VAO
-        VBO_sample.bind();               //绑定VBO
+    set_samples_trans();
 
-        my_shader_model->bind();
-        my_shader_model->enableAttributeArray(0);
-        my_shader_model->enableAttributeArray(1);
-        my_shader_model->enableAttributeArray(2);
-        my_shader_model->setAttributeBuffer(0, GL_FLOAT, Vertex::positionOffset(), Vertex::PositionTupleSize, Vertex::stride());
-        my_shader_model->setAttributeBuffer(1, GL_FLOAT, Vertex::colorOffset(), Vertex::ColorTupleSize, Vertex::stride());
-        my_shader_model->setAttributeBuffer(2, GL_FLOAT, Vertex::normalOffset(), Vertex::NormalTupleSize, Vertex::stride());
+    if(!VAO_sample.isCreated())
+        VAO_sample.create();       //创建VAO
+    VBO_sample.create();             //创建VBO
+    VAO_sample.bind();             //绑定VAO
+    VBO_sample.bind();               //绑定VBO
 
-        VBO_sample.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    my_shader_model->bind();
+    my_shader_model->enableAttributeArray(0);
+    my_shader_model->enableAttributeArray(1);
+    my_shader_model->enableAttributeArray(2);
+    my_shader_model->setAttributeBuffer(0, GL_FLOAT, Vertex::positionOffset(), Vertex::PositionTupleSize, Vertex::stride());
+    my_shader_model->setAttributeBuffer(1, GL_FLOAT, Vertex::colorOffset(), Vertex::ColorTupleSize, Vertex::stride());
+    my_shader_model->setAttributeBuffer(2, GL_FLOAT, Vertex::normalOffset(), Vertex::NormalTupleSize, Vertex::stride());
 
-        VBO_sample.allocate(begin(models[0].vertex_2_of_model()),models[0].size_vertex()*sizeof(Vertex));
-        VBO_sample.release();           //解绑VBO
-        VAO_sample.release();         //解绑VAO
-    }
+    VBO_sample.setUsagePattern(QOpenGLBuffer::StaticDraw);
+
+    VBO_sample.allocate(begin(supports.vertex_2_of_model()),supports.size_vertex()*sizeof(Vertex));
+    VBO_sample.release();           //解绑VBO
+    VAO_sample.release();         //解绑VAO
     my_shader_model->release();       //解绑着色器
 }
-
 void My_Opengl::initializeGL_model()
 {
     //模型载入缓冲区
@@ -169,6 +188,7 @@ void My_Opengl::initializeGL_model()
     my_shader_model->release();       //解绑着色器
 }
 
+
 void My_Opengl::initializeGL()
 {
     initializeOpenGLFunctions();
@@ -178,24 +198,43 @@ void My_Opengl::initializeGL()
     glHint(GL_SAMPLES,4);      //设置锯齿绘制点数
 
     shader_load();
-
     initializeGL_kaung();
-    initializeGL_model();
+    initializeGL_sample();
 }
 
 void My_Opengl::paintGL()
 {
     if(flag_2)
     {
-        initializeGL();
+        initializeGL_model();
         flag_2=false;
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
+    //绘制框
+    Draw_kuang();
+    Draw_samples();
+    //绘制STL模型
+    if(model_readied)
+    {
+        if(!normal_bool.empty())
+        {
+            if(show_red!=show_red_pre)
+            {
+                change_color();
+                initializeGL_model();
+            }
+        }
+        Draw_model();
+    }
+}
 
-    //绘制打印框
+//绘制打印框
+void My_Opengl::Draw_kuang()
+{
+
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDisable(GL_CULL_FACE);
     VAO_kuang.bind();
@@ -216,24 +255,29 @@ void My_Opengl::paintGL()
     VAO_kuang.release();
 
     glEnable(GL_CULL_FACE);
+}
 
-    //绘制STL模型
-    if(model_readied)
-    {
-        if(!normal_bool.empty())
-        {
-            if(show_red!=show_red_pre)
-            {
-                change_color();
-                initializeGL();
-            }
-        }
-        Draw_mine();
-    }
+//绘制支撑
+void My_Opengl::Draw_samples()
+{
+    my_shader_model->bind();
+    my_shader_model->setUniformValue(my_view,m_camera.toMatrix());        //设置观察变换矩阵
+    my_shader_model->setUniformValue(my_projection,m_projection);         //设置投影变换矩阵
+
+    VAO_sample.bind();
+
+    my_shader_model->setUniformValue(my_viepos,m_camera.toMatrix());
+    my_shader_model->setUniformValue(my_model, supports_trans.toMatrix());//设置模型变换矩阵
+    my_shader_model->setUniformValue(my_normal_model,supports_trans.toMatrix().normalMatrix());
+
+    glDrawArrays(GL_TRIANGLES, 0, supports.size_vertex());
+
+    VAO_sample.release();
+    my_shader_model->release();
 }
 
 //模型绘制
-void My_Opengl::Draw_mine()
+void My_Opengl::Draw_model()
 {
     my_shader_model->bind();
     my_shader_model->setUniformValue(my_view,m_camera.toMatrix());        //设置观察变换矩阵
@@ -250,6 +294,7 @@ void My_Opengl::Draw_mine()
     VAO_model.release();
     my_shader_model->release();
 }
+
 
 //更新normal_bool
 void My_Opengl::update_normal()
@@ -287,6 +332,7 @@ QVector3D My_Opengl::QMatrix3x3_model(QVector3D vec,QMatrix3x3 & matrix )
              vec.x() * matrix(1,0) + vec.y() * matrix(1,1) +vec.z()* matrix(1,2),
              vec.x() * matrix(2,0) + vec.y() * matrix(2,1) +vec.z()* matrix(2,2));
 }
+
 
 QMatrix3x3  My_Opengl::transfrom_0()
 {
@@ -342,12 +388,13 @@ void My_Opengl::update()
         static const float rotSpeed   = 0.3f;
         auto x_move=rotSpeed * Input::mouseDelta().x();
         auto y_move=rotSpeed * Input::mouseDelta().y();
-
         auto flag=y_move+camera_y;
 
         camera_x+=x_move;
         m_transform[0].rotate(x_move, up_now);
         m_transform[1].rotate(x_move, up_now);
+        supports_trans.rotate(x_move, up_now);
+
 
         if(flag<90.0&&flag>-90.0)
         {
@@ -364,6 +411,7 @@ void My_Opengl::update()
 
             m_transform[0].rotate(y_move, Camera3D::LocalRight);
             m_transform[1].rotate(y_move, Camera3D::LocalRight);
+            supports_trans.rotate(y_move, Camera3D::LocalRight);
 
             emit new_camera(y_move, Camera3D::LocalRight);  //更新主界面的变换矩阵
         }

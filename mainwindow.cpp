@@ -145,8 +145,8 @@ bool MainWindow::read_ASCII(QTextStream& aStream)
             float x1,y1,z1;
             aStream>>str>>x1>>y1>>z1;
             model.push_back(QVector3D(x1,y1,z1));
-            model.push_back(Vertex(x1,y1,z1,0.3,0.3,0.3,x,y,z));
-            vec_1.push_back(Vertex(x1,y1,z1,0.3,0.3,0.3,x,y,z));             //顶点坐标
+            model.push_back(Vertex(x1,y1,z1,x,y,z));
+            vec_1.push_back(Vertex(x1,y1,z1,x,y,z));             //顶点坐标
         }
         model.push_back(Mesh(n,vec_1[0],vec_1[1],vec_1[2]));
 
@@ -212,8 +212,8 @@ bool MainWindow::read_Binary(QDataStream& aStream)
             aStream.readRawData( (char*) &y1, 4 );
             aStream.readRawData( (char*) &z1, 4 );
             model.push_back(QVector3D(x1,y1,z1));
-            model.push_back(Vertex(x1,y1,z1,0.3,0.3,0.3,x,y,z));
-            vec_1.push_back(Vertex(x1,y1,z1,0.3,0.3,0.3,x,y,z));             //顶点坐标
+            model.push_back(Vertex(x1,y1,z1,x,y,z));
+            vec_1.push_back(Vertex(x1,y1,z1,x,y,z));             //顶点坐标
         }
         model.push_back(Mesh(n,vec_1[0],vec_1[1],vec_1[2]));
         aStream.readRawData((char*)&last_stl,2);
@@ -770,7 +770,7 @@ void MainWindow::load_sample_models()
              aStream.readRawData( (char*) &y1, 4 );
              aStream.readRawData( (char*) &z1, 4 );
              sample_model.push_back(QVector3D(x1,y1,z1));
-             sample_model.push_back(Vertex(x1,y1,z1,0.3,0.3,0.3,x,y,z));
+             sample_model.push_back(Vertex(x1,y1,z1,x,y,z));
          }
          aStream.readRawData((char*)&last_stl,2);
      }

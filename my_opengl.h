@@ -45,13 +45,17 @@ public:
     void resizeGL(int width, int height);
     void paintGL();
     void teardownGL();
+    void set_samples_trans();
 
     //矩阵与向量相乘  3维
     QVector3D QMatrix3x3_model(QVector3D  vec,QMatrix3x3 & matrix );
 
     QMatrix3x3 transfrom_0();
 
-    void Draw_mine();          //绘制模型函数，不显示需要支撑位置
+    void Draw_kuang();          //绘制回城样本函数
+    void Draw_samples();
+    void Draw_model();          //绘制模型函数
+
     void update_normal();        //需支撑位置判断
     void change_color();
     void set_show_red(bool flag) {show_red=flag;}
@@ -133,10 +137,9 @@ private:
     bool show_red=false;                   //是否显示需支撑位置
     bool show_red_pre=false;               //上次存储值
 
-    QVector<bool> normal_bool;
-
-
+    QVector<bool> normal_bool;             //是否需要支撑点集
     QVector<Model> sample_models;          //支撑样本
+    Model supports;                        //支撑模型
     QVector<Model> models;                 //读入模型数据
 
     QOpenGLTexture *texture[2];                //纹理
@@ -178,12 +181,19 @@ private:
 
     //模型移动至底部的原始偏移量
     float y_move_to_bottom;
+    //样本移动至底部的原始偏移量
+    float sample_move_to_bottom;
 
     QMatrix4x4 m_projection;             //投影变换矩阵
 
     Transform3D m_transform[2];          //变换  0为绘制框  1为模型
-
     Transform3D normal_change;           //计算是否需要支撑时使用的变换矩阵
+
+    Transform3D sample_basis_trans;      //模型基础变换
+    Transform3D supports_trans;          //总支撑模型变换
+    QVector<Transform3D> samples_trans;  //各支撑的变换矩阵
+
+
 };
 
 #endif // MY_OPENGL_H

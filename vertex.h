@@ -9,20 +9,20 @@ public:
   // Constructors
     Q_DECL_CONSTEXPR Vertex(){}
 
-    Q_DECL_CONSTEXPR explicit Vertex(const QVector3D &position):m_position(position){}
-    Q_DECL_CONSTEXPR explicit Vertex(const float x,const float y,const float z) : m_position(x,y,z){}
+    Q_DECL_CONSTEXPR Vertex(const float x,const float y,const float z,
+                            const float a_1,const float a_2)
+        :m_position(x,y,z),m_texture(a_1,a_2){}
 
-    Q_DECL_CONSTEXPR Vertex(const QVector3D &position, const QVector3D &color):m_position(position),m_color(color){}
     Q_DECL_CONSTEXPR Vertex(const float x,const float y,const float z ,
-                            const float r,const float b,const float g,
                             const float x_n,const float y_n,const float z_n)
-        :m_position(x,y,z),m_color(r,b,g),m_normal(x_n,y_n,z_n){}
+        :m_position(x,y,z),m_normal(x_n,y_n,z_n){}
+
 
     Q_DECL_CONSTEXPR Vertex(const QVector3D &position,const QVector2D &texture):
         m_position(position),m_texture(texture){}
 
-    Q_DECL_CONSTEXPR Vertex(const float x,const float y,const float z ,
-                            const float a_1,const float a_2):m_position(x,y,z),m_texture(a_1,a_2){}
+    Q_DECL_CONSTEXPR Vertex(const QVector3D &position, const QVector3D &normal):
+        m_position(position),m_normal(normal){}
 
 
   // Accessors / Mutators
@@ -50,9 +50,9 @@ public:
 
 private:
     QVector3D m_position;  //位置
-    QVector3D m_color;    //颜色
     QVector3D m_normal;   //法向量
 
+    QVector3D m_color={0.3,0.3,0.3};    //颜色
     QVector2D m_texture;   //纹理
 };
 

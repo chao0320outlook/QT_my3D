@@ -19,7 +19,7 @@ public:
     void push_back(Vertex && vertex) noexcept {vertexs_2.push_back(std::move(vertex));}
 
     int size()const {return meshs.size();}   //返回mesh数目
-    int size_vertex()const {return vertexs.size();}  //返回顶点数目
+    int size_vertex()const {return vertexs_2.size();}  //返回顶点数目
 
     void set_size(QVector <float> vec)    //设置模型的三轴最大最小值以及中间点
     {
