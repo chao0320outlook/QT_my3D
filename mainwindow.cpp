@@ -8,9 +8,9 @@
 static const char first_stl_binarry=0x53;
 static const char first_stl_ASSCII=0x73;
 
-static const QVector3D my_x(1.0,0.0,0.0);
-static const QVector3D my_y(0.0,1.0,0.0);
-static const QVector3D my_z(0.0,0.0,1.0);
+static const My_Vector3D my_x(1.0,0.0,0.0);
+static const My_Vector3D my_y(0.0,1.0,0.0);
+static const My_Vector3D my_z(0.0,0.0,1.0);
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -24,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //将读入模型的信号通知opengl
     connect(this,SIGNAL(new_model_data(bool)),ui->openGLWidget,SLOT(updata_models_vector(bool)));
-    connect(ui->openGLWidget,SIGNAL(new_camera(float,QVector3D)),this,SLOT(updata_camera_x(float,QVector3D)));
+    connect(ui->openGLWidget,SIGNAL(new_camera(float,My_Vector3D)),this,SLOT(updata_camera_x(float,My_Vector3D)));
 
     load_sample_models();
 }
@@ -50,8 +50,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
         ui->openGLWidget->set_camera_right_false();
 }
 
-
-void MainWindow::updata_camera_x(float move,QVector3D now)
+void MainWindow::updata_camera_x(float move,My_Vector3D now)
 {
     trans_model.rotate(move, now);
 }
@@ -85,7 +84,6 @@ bool MainWindow::openDateSTL(QString &aFileName)
 //    aStream_2.setByteOrder(QDataStream::LittleEndian);   //设置为小端字节序
 //    read_Binary_2(aStream_2);
 
-
     QFile aFile(aFileName);
     if(!(aFile.open(QIODevice::ReadOnly)))
         return false;
@@ -109,10 +107,24 @@ bool MainWindow::openDateSTL(QString &aFileName)
                 break;
             }
         }
+
         if(ascii_true)
             return read_ASCII(strStream);
+
+        //针对开头为 s 的二进制，虽然说目前我也就遇到一个
         else
-            return read_Binary(aStream);
+        {
+            QFile aFile_2(aFileName);
+            if(!(aFile_2.open(QIODevice::ReadOnly)))
+                return false;
+            QDataStream aStream_2(&aFile_2);
+            aStream_2.setByteOrder(QDataStream::LittleEndian);   //设置为小端字节序
+            char first;
+            aStream_2.readRawData(&first,1); //读取第一个字节
+
+            return read_Binary(aStream_2);
+        }
+
     }
     else
     {
@@ -130,43 +142,59 @@ bool MainWindow::read_ASCII(QTextStream& aStream)
     trans_model.restart();
 
     QString str;
+    int i=0;
+    QVector<float> vec_size{-9999.0f,9999.0f,-9999.0f,9999.0f,-9999.0f,9999.0f};
     while(!aStream.atEnd())
     {
         float x,y,z;
-
-        QVector<Vertex> vec_1;
         aStream>>str>>x>>y>>z;
-        QVector3D n(x,y,z);                   //法向量
-
         aStream>>str;
         aStream>>str;
         for(int j=0;j!=3;++j)
         {
             float x1,y1,z1;
             aStream>>str>>x1>>y1>>z1;
-            model.push_back(QVector3D(x1,y1,z1));
+
+            //计算hash 的K值
+//            float k_xyz=x1*100+y1+z1*0.001;
+//            k.push_back(k_xyz);
+//            vertexs_around[k_xyz].push_back(i);
+            if(x1>vec_size[0])
+                vec_size[0]=x1;
+            else if(x1<vec_size[1])
+                vec_size[1]=x1;
+
+            if(y1>vec_size[2])
+                vec_size[2]=y1;
+            else if(y1<vec_size[3])
+                vec_size[3]=y1;
+
+            if(z1>vec_size[4])
+                vec_size[4]=z1;
+            else if(z1<vec_size[5])
+                vec_size[5]=z1;
+
+            vertexs_around[My_Vector3D(x1,y1,z1)].push_back(i);
             model.push_back(Vertex(x1,y1,z1,x,y,z));
-            vec_1.push_back(Vertex(x1,y1,z1,x,y,z));             //顶点坐标
         }
-        model.push_back(Mesh(n,vec_1[0],vec_1[1],vec_1[2]));
 
         aStream>>str;
         aStream>>str;
         aStream>>str;
         if(str=="endsolid")
             break;
+        ++i;
     }
     if(str=="endsolid")
     {
-        model_size();  //寻找模型三轴最大最小点
-        model_translate();  //设置模型变换，使其位于框体正中心，若模型较大，则进行缩小
+        model.set_size(vec_size);
+        x_n=x_now=model.size_X();
+        y_n=y_now=model.size_Z();
+        z_n=z_now=model.size_Y();
 
+        model_translate();  //设置模型变换，使其位于框体正中心，若模型较大，则进行缩小
         ui->openGLWidget->input_model(model);
         emit new_model_data(true);         //发送信号，通知opengl可以进行渲染
-        save_data_vertex_data();
-
-        //模型尺寸缩放设置
-        //set_models_size();
         return true;
     }
     else
@@ -179,48 +207,69 @@ bool MainWindow::read_ASCII(QTextStream& aStream)
 //读取二进制类型数据
 bool MainWindow::read_Binary(QDataStream& aStream)
 {
-
     //跳过开头文件信息
     char first;
     for(size_t i=0;i!=79;++i)
     {
         aStream.readRawData(&first,1);
     }
-
+    vertexs_around.clear();
+    meshs_around.clear();
     model.clear();       //模型清空，等待接收新的数据
-
     //清空变换矩阵
     ui->openGLWidget->m_transform_restart();
     trans_model.restart();
 
     qint32 num_mesh,i=0;
     aStream.readRawData((char*)&num_mesh,sizeof(qint32));           //..找了一天的BUG。。
-
     qint16 last_stl;
     float x,y,z;
     float x1,y1,z1;
+    QVector<float> vec_size{-9999.0f,9999.0f,-9999.0f,9999.0f,-9999.0f,9999.0f};
     for(;i!=num_mesh;++i)
     {
-        QVector<Vertex> vec_1;
         aStream.readRawData( (char*) &x, 4 );
         aStream.readRawData( (char*) &y, 4 );
         aStream.readRawData( (char*) &z, 4 );
-        QVector3D n(x,y,z);                   //法向量
         for(size_t j=0;j!=3;++j)
         {
             aStream.readRawData( (char*) &x1, 4 );
             aStream.readRawData( (char*) &y1, 4 );
             aStream.readRawData( (char*) &z1, 4 );
-            model.push_back(QVector3D(x1,y1,z1));
+
+            //计算hash 的K值
+//            float k_xyz=(x1*1000)/23+(y1*1000)/19+(z1*1000)/17;
+//            k.push_back(k_xyz);
+//            QVector<float> vec{x1,y1,z1};
+//            vertexs_around[vec].push_back(i);
+
+            if(x1>vec_size[0])
+                vec_size[0]=x1;
+            else if(x1<vec_size[1])
+                vec_size[1]=x1;
+
+            if(y1>vec_size[2])
+                vec_size[2]=y1;
+            else if(y1<vec_size[3])
+                vec_size[3]=y1;
+
+            if(z1>vec_size[4])
+                vec_size[4]=z1;
+            else if(z1<vec_size[5])
+                vec_size[5]=z1;
+
+            vertexs_around[My_Vector3D(x1,y1,z1)].push_back(i);
             model.push_back(Vertex(x1,y1,z1,x,y,z));
-            vec_1.push_back(Vertex(x1,y1,z1,x,y,z));             //顶点坐标
         }
-        model.push_back(Mesh(n,vec_1[0],vec_1[1],vec_1[2]));
         aStream.readRawData((char*)&last_stl,2);
     }
     if(i==num_mesh)
     {
-        model_size();  //寻找模型三轴最大最小点
+        model.set_size(vec_size);
+        x_n=x_now=model.size_X();
+        y_n=y_now=model.size_Z();
+        z_n=z_now=model.size_Y();
+
         model_translate();  //设置模型变换，使其位于框体正中心，若模型较大，则进行缩小
 
         ui->openGLWidget->input_model(model);
@@ -229,205 +278,12 @@ bool MainWindow::read_Binary(QDataStream& aStream)
 
         //模型尺寸缩放设置
         set_models_size();
+        mesh_around_push();
+
         return true;
     }
     else
         return false;
-}
-
-//读取二进制并存储
-bool MainWindow::read_Binary_2(QDataStream& aStream)
-{
-    QString aFilename="C:/Users/Administrator/Desktop/My 3D Progream/zzzzz.txt";
-    QFile file(aFilename);
-
-    if (!file.open(QIODevice::WriteOnly|QIODevice::Text))
-    {
-        QMessageBox::information(this, tr("Unable to open file"),file.errorString());
-        return false;
-    }
-
-    QString str_all;
-
-    qint32 size_mine;
-    quint8 first_1[80],char_jum[2],char_num_2[4];
-
-    aStream.readRawData((char*)&first_1,80);
-    aStream.readRawData((char*)&size_mine,4);
-
-    for(int i=0;i!=80;++i)
-    {
-        QString str = QString::number(first_1[i],16).toUpper();
-        //QString str = QString("%1").arg(first_1[i]&0xFF,2,16,QLatin1Char('0'));
-        //str=str.toUpper();//大写
-        str_all+=str;
-    }
-
-    str_all+="\n"+QString::number(size_mine, 10);
-    for(int i=0;i!=size_mine/4;++i)
-    {
-        QString str_all_2;
-        for(int j=0;j!=4;++j)
-        {
-            aStream.readRawData((char*)&char_num_2,4);
-            str_all_2+="( ";
-            for(int i=0;i!=4;++i)
-            {
-                if(char_num_2[i]<16)
-                {
-                    str_all_2+="0"+QString::number(char_num_2[i],16).toUpper();
-                }
-                else
-                    str_all_2+=QString::number(char_num_2[i],16).toUpper();
-            }
-
-            str_all_2+=",";
-            aStream.readRawData((char*)&char_num_2,4);
-            for(int i=0;i!=4;++i)
-            {
-                if(char_num_2[i]<16)
-                {
-                    str_all_2+="0"+QString::number(char_num_2[i],16).toUpper();
-                }
-                else
-                    str_all_2+=QString::number(char_num_2[i],16).toUpper();
-            }
-
-            str_all_2+=",";
-            aStream.readRawData((char*)&char_num_2,4);
-            for(int i=0;i!=4;++i)
-            {
-                if(char_num_2[i]<16)
-                {
-                    str_all_2+="0"+QString::number(char_num_2[i],16).toUpper();
-                }
-                else
-                    str_all_2+=QString::number(char_num_2[i],16).toUpper();
-            }
-            str_all_2+=" )";
-            str_all_2+="    ";
-        }
-        str_all_2+=" ";
-        aStream.readRawData((char*)&char_jum,2);
-        for(int i=0;i!=2;++i)
-        {
-            str_all_2+=QString::number(char_num_2[i],16).toUpper();
-        }
-        str_all+=str_all_2+"\n";
-    }
-    QDataStream out(&file);
-    out.setVersion(QDataStream::Qt_4_5);
-    out << str_all;
-    return true;
-}
-bool MainWindow::save_data_vertex_data()
-{
-    //进行数据存储
-    QString fileName = QFileDialog::getSaveFileName
-            (this, tr("存储数据"), "",tr("文本(*.txt)"));
-    if (fileName.isEmpty())
-        return false;
-    else
-    {
-        QFile file(fileName);
-        if (!file.open(QIODevice::WriteOnly|QIODevice::Text))
-        {
-            QMessageBox::information(this, tr("Unable to open file"),file.errorString());
-            return false;
-        }
-        QString str_all="          N                   P1                        P2                             P3";
-        str_all+="\n";
-        for(auto ptr=model.meshs_of_model().cbegin();ptr!=model.meshs_of_model().cend();ptr++)
-        {
-            QString str_1,str_2,str_3,str_all_1;
-            QVector3D ptr_1;
-            for(int i=0;i!=4;++i)
-            {
-                switch (i)
-                {
-                case 0:
-                    ptr_1=ptr->get_m_vector();
-                    break;
-                case 1:
-                    ptr_1=ptr->get_m_1().position();
-                    break;
-                case 2:
-                    ptr_1=ptr->get_m_2().position();
-                    break;
-                case 3:
-                    ptr_1=ptr->get_m_3().position();
-                    break;
-                default:
-                    break;
-                }
-                str_1= QString::number(ptr_1.x(),10,5);
-                str_2= QString::number(ptr_1.y(),10,5);
-                str_3= QString::number(ptr_1.z(),10,5);
-                str_all_1+="("+str_1 + "," + str_2 +","+ str_3+ ")"+"         ";
-            }
-            str_all_1+="\n";
-            str_all.append(str_all_1);
-        }
-        QDataStream out(&file);
-        out.setVersion(QDataStream::Qt_4_5);
-        out << str_all;
-    }
-    return true;
-}
-
-//寻找X Y Z轴最大最小点
-void MainWindow::model_size()
-{
-    if(model.size())
-    {
-        QVector<float> vec_size{-9999.0f,9999.0f,-9999.0f,9999.0f,-9999.0f,9999.0f};
-        for(auto & i:model.vertex_of_model())
-        {
-            if(i.x()>vec_size[0])
-                vec_size[0]=i.x();
-            else if(i.x()<vec_size[1])
-                vec_size[1]=i.x();
-
-            if(i.y()>vec_size[2])
-                vec_size[2]=i.y();
-            else if(i.y()<vec_size[3])
-                vec_size[3]=i.y();
-
-            if(i.z()>vec_size[4])
-                vec_size[4]=i.z();
-            else if(i.z()<vec_size[5])
-                vec_size[5]=i.z();
-        }
-
-        model.set_size(vec_size);
-
-        x_n=x_now=model.size_X();
-        y_n=y_now=model.size_Z();
-        z_n=z_now=model.size_Y();
-    }
-    else
-    {
-        QVector<float> vec_size{-9999.0f,9999.0f,-9999.0f,9999.0f,-9999.0f,9999.0f};
-        for(auto & i:sample_model.vertex_of_model())
-        {
-            if(i.x()>vec_size[0])
-                vec_size[0]=i.x();
-            else if(i.x()<vec_size[1])
-                vec_size[1]=i.x();
-
-            if(i.y()>vec_size[2])
-                vec_size[2]=i.y();
-            else if(i.y()<vec_size[3])
-                vec_size[3]=i.y();
-
-            if(i.z()>vec_size[4])
-                vec_size[4]=i.z();
-            else if(i.z()<vec_size[5])
-                vec_size[5]=i.z();
-        }
-        sample_model.set_size(vec_size);
-    }
-
 }
 
 //设置模型变换，使其位于框体正中心，若模型较大，则进行缩小
@@ -703,9 +559,9 @@ void MainWindow::on_horizontalSlider_3_valueChanged(int value)
 
     ui->openGLWidget->set_transform(trans_model);
 }
-QVector3D MainWindow::QMatrix3x3_model(QVector3D vec,QMatrix3x3 & matrix )
+My_Vector3D MainWindow::QMatrix3x3_model(My_Vector3D vec,QMatrix3x3 & matrix )
 {
-    return QVector3D
+    return My_Vector3D
             (vec.x() * matrix(0,0) + vec.y() * matrix(0,1) +vec.z()* matrix(0,2),
              vec.x() * matrix(1,0) + vec.y() * matrix(1,1) +vec.z()* matrix(1,2),
              vec.x() * matrix(2,0) + vec.y() * matrix(2,1) +vec.z()* matrix(2,2));
@@ -751,37 +607,84 @@ void MainWindow::load_sample_models()
      }
 
      sample_model.clear();
-
      qint32 num_mesh,i=0;
      aStream.readRawData((char*)&num_mesh,sizeof(qint32));           //..找了一天的BUG。。
-
      qint16 last_stl;
      float x,y,z;
      float x1,y1,z1;
+     QVector<float> vec_size{-9999.0f,9999.0f,-9999.0f,9999.0f,-9999.0f,9999.0f};
      for(;i!=num_mesh;++i)
      {
          aStream.readRawData( (char*) &x, 4 );
          aStream.readRawData( (char*) &y, 4 );
          aStream.readRawData( (char*) &z, 4 );
-         QVector3D n(x,y,z);                   //法向量
          for(size_t j=0;j!=3;++j)
          {
              aStream.readRawData( (char*) &x1, 4 );
              aStream.readRawData( (char*) &y1, 4 );
              aStream.readRawData( (char*) &z1, 4 );
-             sample_model.push_back(QVector3D(x1,y1,z1));
+
+             if(x1>vec_size[0])
+                 vec_size[0]=x1;
+             else if(x1<vec_size[1])
+                 vec_size[1]=x1;
+
+             if(y1>vec_size[2])
+                 vec_size[2]=y1;
+             else if(y1<vec_size[3])
+                 vec_size[3]=y1;
+
+             if(z1>vec_size[4])
+                 vec_size[4]=z1;
+             else if(z1<vec_size[5])
+                 vec_size[5]=z1;
+
              sample_model.push_back(Vertex(x1,y1,z1,x,y,z));
          }
          aStream.readRawData((char*)&last_stl,2);
      }
      if(i==num_mesh)
      {
-         model_size();  //寻找模型三轴最大最小点
+         sample_model.set_size(vec_size);
          ui->openGLWidget->load_sample_models(sample_model);
      }
 }
 
+//计算支撑位置并生成
 void MainWindow::on_pushButton_6_clicked()
 {
     ui->openGLWidget->set_draw_suppports_true();
+}
+
+//存储每个mesh周围的meshs
+void MainWindow::mesh_around_push()
+{
+    int count_wrong=0;
+    QVector<Vertex>& meshs=model.vertexs_of_model();
+    for(int i=0,z=0;i!=model.size_vertex();i=i+3,++z)
+    {
+        QVector<int> ver_1=vertexs_around[meshs[i].position()];
+        QVector<int> ver_2=vertexs_around[meshs[i+1].position()];
+        QVector<int> ver_3=vertexs_around[meshs[i+2].position()];
+
+        QMap<int,int> map_1;
+        for(auto &j:ver_1)
+            map_1[j]++;
+        for(auto &j:ver_2)
+        {
+            map_1[j]++;
+            if(j!=z && map_1[j]!=1)
+                meshs_around[i].push_back(j);
+        }
+        for(auto &j:ver_3)
+        {
+            map_1[j]++;
+            if(j!=z && map_1[j]!=1)
+                meshs_around[i].push_back(j);
+        }
+        if(meshs_around[i].size()!=3)
+            count_wrong++;
+    }
+    ui->openGLWidget->set_mesh_around(meshs_around);
+    ui->spinBox->setValue(count_wrong);
 }

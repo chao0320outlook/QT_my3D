@@ -3,13 +3,13 @@
 //#include<QDebug>
 // Transform By (Add/Scale)
 
-void Transform3D::translate(const QVector3D &dt)
+void Transform3D::translate(const My_Vector3D &dt)
 {
   m_dirty = true;
   m_translation += dt;
 }
 
-void Transform3D::scale(const QVector3D &ds)
+void Transform3D::scale(const My_Vector3D &ds)
 {
   m_dirty = true;
   m_scale *= ds;
@@ -21,20 +21,20 @@ void Transform3D::rotate(const QQuaternion &dr)
   m_rotation = dr * m_rotation;
 }
 
-void Transform3D::grow(const QVector3D &ds)
+void Transform3D::grow(const My_Vector3D &ds)
 {
   m_dirty = true;
   m_scale += ds;
 }
 
 // Transform To (Setters)
-void Transform3D::setTranslation(const QVector3D &t)
+void Transform3D::setTranslation(const My_Vector3D &t)
 {
   m_dirty = true;
   m_translation = t;
 }
 
-void Transform3D::setScale(const QVector3D &s)
+void Transform3D::setScale(const My_Vector3D &s)
 {
   m_dirty = true;
   m_scale = s;

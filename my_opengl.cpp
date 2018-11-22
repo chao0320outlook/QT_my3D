@@ -23,7 +23,7 @@ My_Opengl::My_Opengl(QWidget *parent):QOpenGLWidget(parent)
     connect(this, SIGNAL(frameSwapped()), this, SLOT(update()));  //必须
 
     m_camera.setTranslation(0.0f,0.0f,32.0f);
-    m_camera.setRotation(-12.0f,1.0f,0.0f,0.0f);
+    m_camera.setRotation(0.0f,1.0f,0.0f,0.0f);
 }
 
 My_Opengl::~My_Opengl()
@@ -41,17 +41,47 @@ void My_Opengl::load_sample_models(Model model)
     sample_move_to_bottom=model.samples_min_y();
     trans.setTranslation(0.0f,sample_move_to_bottom,0.0f); //使模型置于底部
 
-    for(auto &i :model.vertex_2_of_model())
+    for(auto &i :model.vertexs_of_model())
     {
-        i.setPosition(trans.toMatrix()*i.position());
+        i.setPosition(My_Vector3D(trans.toMatrix()*i.position()));
     }
     sample_models.push_back(model);
 }
 
+void My_Opengl::calculate_supperts()
+{
+
+    //可优化，直接对需要支撑的区域进行遍历
+
+
+
+    if(!meshs_around.isEmpty())
+    {
+        QVector<bool> mesh_is_counted(models[0].size(),true);
+        for(int i=0;i!=models[0].size();++i)
+        {
+            //若未进行统计且需要支撑
+            if(mesh_is_counted[i]&&normal_bool[i])
+            {
+                QVector<int> vec_supperts;     //一个需要支撑的区域
+                count_supperts(i,vec_supperts);
+                need_supperts_aeras.push_back(vec_supperts);
+            }
+        }
+    }
+}
+
+//将需支撑的三角面片整合为连续的区域
+void My_Opengl::count_supperts(int i,QVector<int> &vec_supperts)
+{
+
+}
+
+
 //支撑整合为模型
 void My_Opengl::set_samples_trans()
 {
-    QVector<QVector3D> sample_trans_x_z={{6,0,6},{6,0,-6},{-6,0,6},{-6,0,-6}};
+    QVector<My_Vector3D> sample_trans_x_z={{6,0,6},{6,0,-6},{-6,0,6},{-6,0,-6}};
     for(int i=0;i!=4;++i)
     {
         Transform3D trans;
@@ -61,20 +91,21 @@ void My_Opengl::set_samples_trans()
     //合成为一整个模型
     for(int i=0;i!=samples_trans.size();++i)
     {
-        for(auto &j :sample_models[0].vertex_2_of_model())
+        for(auto &j :sample_models[0].vertexs_of_model())
         {
             //得到变换后位置坐标
-           QVector3D location = samples_trans[i].toMatrix()*j.position();
+           My_Vector3D location = samples_trans[i].toMatrix()*j.position();
 
            //得到变换后法向量
            QMatrix3x3 normal_c = samples_trans[i].toMatrix().normalMatrix();
-           QVector3D vector_mine=QMatrix3x3_model(j.normal(),normal_c);
+           My_Vector3D vector_mine=QMatrix3x3_model(j.normal(),normal_c);
            //添加进新模型
            supports.push_back( Vertex(location,vector_mine));
         }
     }
 }
 
+//初始属性设置
 void My_Opengl::shader_load()
 {
     // 创建着色器
@@ -158,7 +189,7 @@ void My_Opengl::initializeGL_sample()
 
     VBO_sample.setUsagePattern(QOpenGLBuffer::StaticDraw);
 
-    VBO_sample.allocate(begin(supports.vertex_2_of_model()),supports.size_vertex()*sizeof(Vertex));
+    VBO_sample.allocate(begin(supports.vertexs_of_model()),supports.size_vertex()*sizeof(Vertex));
     VBO_sample.release();           //解绑VBO
     VAO_sample.release();         //解绑VAO
     my_shader_model->release();       //解绑着色器
@@ -184,18 +215,17 @@ void My_Opengl::initializeGL_model()
 
         VBO_model.setUsagePattern(QOpenGLBuffer::StaticDraw);
 
-        VBO_model.allocate(begin(models[0].vertex_2_of_model()),models[0].size_vertex()*sizeof(Vertex));
+        VBO_model.allocate(begin(models[0].vertexs_of_model()),models[0].size_vertex()*sizeof(Vertex));
         VBO_model.release();           //解绑VBO
         VAO_model.release();         //解绑VAO
     }
     my_shader_model->release();       //解绑着色器
 }
 
-
 void My_Opengl::initializeGL()
 {
     initializeOpenGLFunctions();
-    glClearColor(0.9, 0.9, 0.9, 1.0f);
+    glClearColor(0.9, 0.9, 0.9, 1.0);
 
     glEnable(GL_MULTISAMPLE);  //开启抗锯齿
     glHint(GL_SAMPLES,4);      //设置锯齿绘制点数
@@ -204,6 +234,7 @@ void My_Opengl::initializeGL()
     initializeGL_kaung();
 }
 
+//绘制
 void My_Opengl::paintGL()
 {
     // initializeGL_model(); initializeGL_sample(); 只能放这里
@@ -228,13 +259,10 @@ void My_Opengl::paintGL()
     //绘制STL模型
     if(model_readied)
     {
-        if(!normal_bool.empty())
+        if(!normal_bool.empty() && show_red!=show_red_pre)
         {
-            if(show_red!=show_red_pre)
-            {
-                change_color();
-                initializeGL_model();
-            }
+            change_color();
+            initializeGL_model();
         }
         Draw_model();
     }
@@ -242,8 +270,6 @@ void My_Opengl::paintGL()
         Draw_samples();
 
 }
-
-//绘制打印框
 void My_Opengl::Draw_kuang()
 {
 
@@ -268,8 +294,6 @@ void My_Opengl::Draw_kuang()
 
     glEnable(GL_CULL_FACE);
 }
-
-//绘制支撑
 void My_Opengl::Draw_samples()
 {
     my_shader_model->bind();
@@ -287,8 +311,6 @@ void My_Opengl::Draw_samples()
     VAO_sample.release();
     my_shader_model->release();
 }
-
-//模型绘制
 void My_Opengl::Draw_model()
 {
     my_shader_model->bind();
@@ -312,11 +334,11 @@ void My_Opengl::update_normal()
 {
     if(!normal_bool.empty())
         normal_bool.clear();
-    auto my_normal=models[0].meshs_of_model();   //得到mesh数组
+    QVector<Vertex>& my_normal=models[0].vertexs_of_model();   //得到mesh数组
     QMatrix3x3 normal_c=normal_change.toMatrix().normalMatrix();
-    for(auto &i:my_normal)
+    for(auto ptr=my_normal.cbegin();ptr!=my_normal.cend();ptr+=3)
     {
-        auto vector_mine=QMatrix3x3_model(i.get_m_vector(),normal_c);  //得到变换后法向量
+        auto vector_mine=QMatrix3x3_model(ptr->normal(),normal_c);  //得到变换后法向量
         //若y轴法向量为负
         if(vector_mine.y()<0)
         {
@@ -333,17 +355,17 @@ void My_Opengl::update_normal()
     if(show_red)
     {
         change_color();
-        initializeGL();
+        initializeOpenGLFunctions();
+        initializeGL_model();
     }
 }
-QVector3D My_Opengl::QMatrix3x3_model(QVector3D vec,QMatrix3x3 & matrix )
+My_Vector3D My_Opengl::QMatrix3x3_model(My_Vector3D vec,QMatrix3x3 & matrix )
 {
-    return QVector3D
+    return My_Vector3D
             (vec.x() * matrix(0,0) + vec.y() * matrix(0,1) +vec.z()* matrix(0,2),
              vec.x() * matrix(1,0) + vec.y() * matrix(1,1) +vec.z()* matrix(1,2),
              vec.x() * matrix(2,0) + vec.y() * matrix(2,1) +vec.z()* matrix(2,2));
 }
-
 
 QMatrix3x3  My_Opengl::transfrom_0()
 {
@@ -429,7 +451,7 @@ void My_Opengl::update()
     }
 
     static const float transSpeed = 0.1f;
-    QVector3D translation;
+    My_Vector3D translation;
 
     if (camera_left)
     {
@@ -459,7 +481,7 @@ void My_Opengl::mouseReleaseEvent(QMouseEvent *event)
 void My_Opengl::wheelEvent(QWheelEvent *event)
 {
     static const float transSpeed = 1.0f;
-    QVector3D translation;
+    My_Vector3D translation;
     if(event->delta()>0)     //若滚轮上滚
         translation += m_camera.forward();
     else

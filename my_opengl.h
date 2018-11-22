@@ -30,7 +30,7 @@ public:
 
     Camera3D m_camera;                    //相机成员
 
-    QVector3D vec1[3]=
+    My_Vector3D vec1[3]=
     {
         {1.0f,0.0f,0.0f},
         {0.0f,0.0f,1.0f},
@@ -46,18 +46,20 @@ public:
     void paintGL();
     void teardownGL();
     void set_samples_trans();
+    void calculate_supperts();
+    void count_supperts(int i,QVector<int> &vec_supperts);
 
     //矩阵与向量相乘  3维
-    QVector3D QMatrix3x3_model(QVector3D  vec,QMatrix3x3 & matrix );
+    My_Vector3D QMatrix3x3_model(My_Vector3D  vec,QMatrix3x3 & matrix );
 
     QMatrix3x3 transfrom_0();
 
     void Draw_kuang();          //绘制回城样本函数
-    void Draw_samples();
+    void Draw_samples();        //绘制样本
     void Draw_model();          //绘制模型函数
 
     void update_normal();        //需支撑位置判断
-    void change_color();
+    void change_color();         //改变物体颜色
     void set_show_red(bool flag) {show_red=flag;}
 
     //设置相机移动
@@ -81,17 +83,18 @@ public:
     {
         m_transform[0].restart();
         m_transform[1].restart();
+        supports_trans.restart();
 
         camera_x=0.0;
         camera_y=0.0;
     }
     QQuaternion get_rotation(){return m_transform[0].rotation();}
 
-    void normal_trans(float angle, QVector3D axis)
+    void normal_trans(float angle, My_Vector3D axis)
     {
         normal_change.rotate(angle,axis);
     }
-    void set_normal_trans(float angle, QVector3D axis)
+    void set_normal_trans(float angle, My_Vector3D axis)
     {
         normal_change.setRotation(angle,axis);
     }
@@ -107,16 +110,17 @@ public:
             models.push_back(model);
         }
     }
-
     //读入支撑样本
     void load_sample_models(Model model);
     void set_draw_suppports_true(){draw_suppports=true;}
     //设置变换
     void set_transform(Transform3D tran){m_transform[1]=tran;}
-
+    //设置拓补数据
+    void set_mesh_around(QMap <int,QVector<int>> meshs_around_z)
+    {meshs_around= meshs_around_z; }
 signals:
 
-    void new_camera(float move,QVector3D now);
+    void new_camera(float move,My_Vector3D now);
 
 protected slots:
     void update();
@@ -142,8 +146,7 @@ private:
     QVector<Model> sample_models;          //支撑样本
     Model supports;                        //支撑模型
     QVector<Model> models;                 //读入模型数据
-
-    QOpenGLTexture *texture[2];                //纹理
+    QOpenGLTexture *texture[2];            //纹理
 
 
     QOpenGLVertexArrayObject VAO_kuang;          //VAO顶点数组对象
@@ -194,7 +197,8 @@ private:
     Transform3D supports_trans;          //总支撑模型变换
     QVector<Transform3D> samples_trans;  //各支撑的变换矩阵
 
-
+    QMap <int,QVector<int>> meshs_around;       //每个mesh周围的mesh
+    QVector<QVector<int>> need_supperts_aeras;  //需要支撑的区域
 };
 
 #endif // MY_OPENGL_H

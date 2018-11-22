@@ -24,7 +24,7 @@ SOURCES += \
     input.cpp \
     mesh.cpp
 
-HEADERS += \
+HEADERS +=\
         mainwindow.h \
     my_opengl.h \
     transform_3d.h \
@@ -32,9 +32,10 @@ HEADERS += \
     vertex.h \
     input.h \
     mesh.h \
-    model.h
+    model.h \
+    my_vector3d.h
 
-FORMS += \
+FORMS +=\
     mainwindow.ui
 
 RESOURCES += \

@@ -41,21 +41,21 @@ void main(void)
     material.ambient=objectColor;
     material.diffuse=objectColor;
     material.specular=vec3(0.5,0.5,0.5);
-    material.shininess=32.0;
+    material.shininess=64.0;
 
     light_mine.ambient=vec3(0.2,0.2,0.2);
-    light_mine.diffuse=vec3(0.7,0.7,0.7);
-    light_mine.specular=vec3(0.0,0.0,0.0);
+    light_mine.diffuse=vec3(0.5,0.5,0.5);
+    light_mine.specular=vec3(1.0,1.0,1.0);
 
     vec3 ambient = light_mine.ambient * material.ambient;                 //环境光照
 
-    float diffu=(Diff(light_pos_1)+Diff(light_pos_2)+ Diff(light_pos_3)+Diff(light_pos_4));
+    float diffu=(Diff(light_pos_1)+Diff(light_pos_2)+ Diff(light_pos_3)+Diff(light_pos_4))*0.7;
     vec3 diffuse = light_mine.diffuse * (diffu * material.diffuse);      //最终漫反射
 
-    float specu=(Spec(light_pos_1) + Spec(light_pos_2) + Spec(light_pos_3)+Spec(light_pos_4));
-    vec3 specular= light_mine.diffuse * (specu * material.specular);
+    float specu=(Spec(light_pos_1) + Spec(light_pos_2) + Spec(light_pos_3)+Spec(light_pos_4))*0.4;
+    vec3 specular= light_mine.specular * (specu * material.specular);
 
-    vec3 result = ambient + diffuse;
+    vec3 result = ambient + diffuse + specu;
     gl_FragColor = vec4(result, 1.0);
 
 }

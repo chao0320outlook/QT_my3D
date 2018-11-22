@@ -9,17 +9,11 @@ class Model
 public:
     Model()=default;
 
-    void push_back(const Mesh & mesh_s) {meshs.push_back(mesh_s);}
-    void push_back(Mesh && mesh_s) noexcept {meshs.push_back(std::move(mesh_s));}
+    void push_back(const Vertex & vertex) {vertexs.push_back(vertex);}
+    void push_back(Vertex && vertex) noexcept {vertexs.push_back(std::move(vertex));}
 
-    void push_back(const QVector3D & vertex) {vertexs.push_back(vertex);}
-    void push_back(QVector3D && vertex) noexcept {vertexs.push_back(std::move(vertex));}
-
-    void push_back(const Vertex & vertex) {vertexs_2.push_back(vertex);}
-    void push_back(Vertex && vertex) noexcept {vertexs_2.push_back(std::move(vertex));}
-
-    int size()const {return meshs.size();}   //返回mesh数目
-    int size_vertex()const {return vertexs_2.size();}  //返回顶点数目
+    int size()const {return meshs_numbers;}   //返回mesh数目
+    int size_vertex()const {return vertexs.size();}  //返回顶点数目
 
     void set_size(QVector <float> vec)    //设置模型的三轴最大最小值以及中间点
     {
@@ -56,39 +50,35 @@ public:
 
     void set_color(int i)
     {
-        vertexs_2[i].setColor(1.0,0.0,0.0);
-        vertexs_2[i+1].setColor(1.0,0.0,0.0);
-        vertexs_2[i+2].setColor(1.0,0.0,0.0);
+        vertexs[i].setColor(1.0,0.0,0.0);
+        vertexs[i+1].setColor(1.0,0.0,0.0);
+        vertexs[i+2].setColor(1.0,0.0,0.0);
     }
     void set_color_2(int i)
     {
-        vertexs_2[i].setColor(0.0,1.0,0.0);
-        vertexs_2[i+1].setColor(0.0,1.0,0.0);
-        vertexs_2[i+2].setColor(0.0,1.0,0.0);
+        vertexs[i].setColor(0.0,1.0,0.0);
+        vertexs[i+1].setColor(0.0,1.0,0.0);
+        vertexs[i+2].setColor(0.0,1.0,0.0);
     }
     void restart_color()
     {
-        for(auto & i:vertexs_2)
+        for(auto & i:vertexs)
             i.setColor(0.3,0.3,0.3);
     }
 
-    QVector<Mesh>& meshs_of_model(){return meshs;}
-    QVector<QVector3D>& vertex_of_model(){return vertexs;}
-    QVector<Vertex>& vertex_2_of_model(){return vertexs_2;}
+    QVector<Vertex>& vertexs_of_model(){return vertexs;}
 
     void clear()
     {
-        meshs.clear();
         vertexs.clear();
-        vertexs_2.clear();
     }
 
 private:
-    QVector<Mesh> meshs;          //mesh数组
-    QVector<QVector3D> vertexs;   //顶点数组，只包含坐标
-    QVector<Vertex> vertexs_2;    //顶点数组，包含坐标与法向量 绘制时使用
+    QVector<Vertex> vertexs;      //顶点数组，包含坐标与法向量 绘制时使用
     float x_max,x_min,y_max,y_min,z_max,z_min; //三轴实际最大最小值
     float x_mid,y_mid,z_mid;      //中心位置坐标
+    int vertexs_number;
+    int meshs_numbers;
 };
 
 #endif // MODEL_H

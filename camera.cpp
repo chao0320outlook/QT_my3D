@@ -2,12 +2,12 @@
 
 //#include <QDebug>
 
-const QVector3D Camera3D::LocalForward(0.0f, 0.0f, -1.0f);  //默认前轴
-const QVector3D Camera3D::LocalUp(0.0f, 1.0f, 0.0f);        //默认上轴
-const QVector3D Camera3D::LocalRight(1.0f, 0.0f, 0.0f);     //默认右轴
+const My_Vector3D Camera3D::LocalForward(0.0f, 0.0f, -1.0f);  //默认前轴
+const My_Vector3D Camera3D::LocalUp(0.0f, 1.0f, 0.0f);        //默认上轴
+const My_Vector3D Camera3D::LocalRight(1.0f, 0.0f, 0.0f);     //默认右轴
 
 // Transform By (Add/Scale)
-void Camera3D::translate(const QVector3D &dt)
+void Camera3D::translate(const My_Vector3D &dt)
 {
     m_dirty = true;
     m_translation += dt;
@@ -20,7 +20,7 @@ void Camera3D::rotate(const QQuaternion &dr)
 }
 
 // Transform To (Setters)
-void Camera3D::setTranslation(const QVector3D &t)
+void Camera3D::setTranslation(const My_Vector3D &t)
 {
     m_dirty = true;
     m_translation = t;
@@ -46,17 +46,17 @@ const QMatrix4x4 &Camera3D::toMatrix()
 }
 
 // Queries
-QVector3D Camera3D::forward() const
+My_Vector3D Camera3D::forward() const
 {
     return m_rotation.rotatedVector(LocalForward);
 }
 
-QVector3D Camera3D::right() const
+My_Vector3D Camera3D::right() const
 {
     return m_rotation.rotatedVector(LocalRight);
 }
 
-QVector3D Camera3D::up() const
+My_Vector3D Camera3D::up() const
 {
     return m_rotation.rotatedVector(LocalUp);
 }

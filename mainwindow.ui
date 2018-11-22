@@ -20,9 +20,9 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>326</x>
+      <x>296</x>
       <y>4</y>
-      <width>701</width>
+      <width>731</width>
       <height>491</height>
      </rect>
     </property>
@@ -545,6 +545,19 @@
     </property>
     <property name="text">
      <string>支撑生成</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>360</y>
+      <width>111</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>99999</number>
     </property>
    </widget>
   </widget>

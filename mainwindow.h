@@ -5,8 +5,10 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QDataStream>
+#include <QMap>
 #include "model.h"
 #include "transform_3d.h"
+#include "my_vector3d.h"
 
 namespace Ui
 {
@@ -19,7 +21,7 @@ class MainWindow : public QMainWindow
 
 public:
 
-    QVector3D QMatrix3x3_model(QVector3D  vec,QMatrix3x3 & matrix );
+    My_Vector3D QMatrix3x3_model(My_Vector3D  vec,QMatrix3x3 & matrix );
 
     bool flag=true;
 
@@ -38,6 +40,8 @@ public:
     void mid_scale_changge(float& old_zoom);
     void load_sample_models();
 
+    void mesh_around_push();
+
     void updata_xyz()
     {
         z_now=zoom_now*z_n;
@@ -54,6 +58,10 @@ private:
     Model sample_model;
     Transform3D trans_model;
 
+    QMap <My_Vector3D,QVector<int>> vertexs_around;   //每个点周围的mesh
+    QMap <int,QVector<int>> meshs_around;       //每个mesh周围的mesh
+
+
     int x_last=0,y_last=0,z_last=0;
     //Z为高度
     float x_n=0.0f,y_n=0.0f,z_n=0.0f;  //原始数据
@@ -65,7 +73,7 @@ private slots:
     //自定义槽函数
     void keyPressEvent(QKeyEvent *event);
 
-    void updata_camera_x(float move,QVector3D now);
+    void updata_camera_x(float move,My_Vector3D now);
 
     void keyReleaseEvent(QKeyEvent *event);
 

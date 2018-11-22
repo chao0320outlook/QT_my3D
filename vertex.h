@@ -1,6 +1,6 @@
 ﻿#ifndef VERTEX_H
 #define VERTEX_H
-#include <QVector3D>
+#include "my_vector3d.h"
 #include <QVector2D>
 
 class Vertex
@@ -18,21 +18,21 @@ public:
         :m_position(x,y,z),m_normal(x_n,y_n,z_n){}
 
 
-    Q_DECL_CONSTEXPR Vertex(const QVector3D &position,const QVector2D &texture):
+    Q_DECL_CONSTEXPR Vertex(const My_Vector3D &position,const QVector2D &texture):
         m_position(position),m_texture(texture){}
 
-    Q_DECL_CONSTEXPR Vertex(const QVector3D &position, const QVector3D &normal):
+    Q_DECL_CONSTEXPR Vertex(const My_Vector3D &position, const My_Vector3D &normal):
         m_position(position),m_normal(normal){}
 
 
   // Accessors / Mutators
-    Q_DECL_CONSTEXPR const QVector3D& position() const;
-    Q_DECL_CONSTEXPR const QVector3D& normal() const;
+    Q_DECL_CONSTEXPR const My_Vector3D& position() const;
+    Q_DECL_CONSTEXPR const My_Vector3D& normal() const;
     Q_DECL_CONSTEXPR const QVector2D& texture() const;
 
-    void setPosition(const QVector3D& position);
+    void setPosition(const My_Vector3D& position);
     void setColor (const float r,const float b,const float g);
-    void setNormal(const QVector3D& normal);
+    void setNormal(const My_Vector3D& normal);
     void setTexture(const QVector2D& texture);
 
   // OpenGL Helpers
@@ -49,9 +49,9 @@ public:
 
 
 private:
-    QVector3D m_position;  //位置
-    QVector3D m_color={1.0,0.0,0.0};    //颜色
-    QVector3D m_normal;   //法向量
+    My_Vector3D m_position;  //位置
+    My_Vector3D m_color={0.3,0.3,0.3};    //颜色
+    My_Vector3D m_normal;   //法向量
     QVector2D m_texture;   //纹理
 };
 
@@ -65,14 +65,14 @@ Q_DECLARE_TYPEINFO(Vertex, Q_MOVABLE_TYPE);
 // Constructors
 
 // Accessors / Mutators
-Q_DECL_CONSTEXPR inline const QVector3D& Vertex::position() const { return m_position; }
-Q_DECL_CONSTEXPR inline const QVector3D& Vertex::normal() const { return m_normal; }
+Q_DECL_CONSTEXPR inline const My_Vector3D& Vertex::position() const { return m_position; }
+Q_DECL_CONSTEXPR inline const My_Vector3D& Vertex::normal() const { return m_normal; }
 Q_DECL_CONSTEXPR inline const QVector2D& Vertex::texture() const { return m_texture; }
 
-void inline Vertex::setPosition(const QVector3D& position) { m_position = position; }
-void inline Vertex::setNormal(const QVector3D& normal) { m_normal = normal; }
+void inline Vertex::setPosition(const My_Vector3D& position) { m_position = position; }
+void inline Vertex::setNormal(const My_Vector3D& normal) { m_normal = normal; }
 void inline Vertex::setTexture(const QVector2D& texture) { m_texture =texture; }
-void inline Vertex::setColor (const float r,const float b,const float g){m_color=QVector3D(r,g,b);}
+void inline Vertex::setColor (const float r,const float b,const float g){m_color=My_Vector3D(r,g,b);}
 
 // OpenGL Helpers
 Q_DECL_CONSTEXPR inline int Vertex::positionOffset() { return offsetof(Vertex, m_position); }
