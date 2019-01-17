@@ -24,6 +24,12 @@ public:
     Q_DECL_CONSTEXPR Vertex(const My_Vector3D &position, const My_Vector3D &normal):
         m_position(position),m_normal(normal){}
 
+    Vertex(const Vertex&)=default;
+    Vertex& operator=(const Vertex&)=default;
+
+    Vertex (Vertex&&)=default;
+    Vertex& operator=(Vertex&&)=default;
+
 
   // Accessors / Mutators
     Q_DECL_CONSTEXPR const My_Vector3D& position() const;
@@ -54,6 +60,39 @@ private:
     My_Vector3D m_normal;   //法向量
     QVector2D m_texture;   //纹理
 };
+
+
+class X_Y_supperts
+{
+public:
+    Q_DECL_CONSTEXPR X_Y_supperts(){}
+    Q_DECL_CONSTEXPR X_Y_supperts(const QVector2D &x_z_1):x_z(x_z_1){}
+
+    X_Y_supperts(const X_Y_supperts&)=default;
+    X_Y_supperts& operator=(const X_Y_supperts&)=default;
+
+    X_Y_supperts (X_Y_supperts&&)=default;
+    X_Y_supperts& operator=(X_Y_supperts&&)=default;
+
+
+    void set_height(const float y_hight_1){y_hight=y_hight_1;}
+    void set_needed(){needed=true;}
+    void set_mesh_num(int num){mesh_num=num;}
+
+    Q_DECL_CONSTEXPR const bool& show_need() const {return needed;}
+    Q_DECL_CONSTEXPR const int& mesh_mun() const {return mesh_num;}
+
+    Q_DECL_CONSTEXPR float x() const {return x_z.x();}
+    Q_DECL_CONSTEXPR float y_salce() const {return y_hight/10.0;}
+    Q_DECL_CONSTEXPR float z() const {return x_z.y();}
+
+private:
+    QVector2D x_z;
+    float y_hight=0.0;
+    bool needed=false;
+    int mesh_num=-1;
+};
+
 
 /*******************************************************************************
  * Inline Implementation

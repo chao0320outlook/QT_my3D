@@ -71,8 +71,8 @@ private:
   My_Vector3D m_translation;     //位置矩阵
   My_Vector3D m_translation_mid; //移动到中间点的变换
   My_Vector3D m_scale;           //缩放矩阵
-  QQuaternion m_rotation;      //旋转四元数
-  QMatrix4x4 m_world;          //所有改变综合后矩阵
+  QQuaternion m_rotation;        //旋转四元数
+  QMatrix4x4 m_world;            //所有改变综合后矩阵
 
 #ifndef QT_NO_DATASTREAM
   friend QDataStream &operator<<(QDataStream &out, const Transform3D &transform);

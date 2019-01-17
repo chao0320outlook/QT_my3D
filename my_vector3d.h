@@ -2,6 +2,7 @@
 #define MY_VECTOR3D_H
 
 #include <QVector3D>
+#include <QHash>
 
 class My_Vector3D :public QVector3D
 {
@@ -10,7 +11,6 @@ public:
 
     Q_DECL_CONSTEXPR My_Vector3D(float xpos, float ypos, float zpos) :QVector3D(xpos,ypos,zpos)  {}
     Q_DECL_CONSTEXPR My_Vector3D(QVector3D z) :QVector3D(z)  {}
-
 
   friend inline bool operator<(const My_Vector3D &v1, const My_Vector3D &v2)
     {
@@ -54,4 +54,6 @@ public:
 
 };
 
+
 #endif // MY_VECTOR3D_H
+

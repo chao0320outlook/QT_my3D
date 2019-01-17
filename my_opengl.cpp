@@ -31,63 +31,202 @@ My_Opengl::~My_Opengl()
     teardownGL();
 }
 
+//载入支撑模型
 void My_Opengl::load_sample_models(Model model)
 {
     Transform3D trans;
-    trans.setScale(0.1f,0.1f,1.0f);//基础变形，缩小10倍
-    trans.setTranslation_mid(-model.mid_x(),-model.mid_y(),-model.samples_mid_z()); //将模型移动到正中心变换
+    trans.setScale(0.05f,0.05f,1.0f);//基础变形，将模型变换至合适大小
+    trans.setTranslation_mid(-model.samples_mid_x(),-model.samples_mid_y(),-model.samples_mid_z()); //将模型移动到正中心变换
     trans.rotate(90.0,1,0,0);
-
-    sample_move_to_bottom=model.samples_min_y();
-    trans.setTranslation(0.0f,sample_move_to_bottom,0.0f); //使模型置于底部
-
+//    sample_move_to_bottom=model.samples_min_y();
+//    trans.setTranslation(0.0f,sample_move_to_bottom,0.0f); //使模型置于底部
     for(auto &i :model.vertexs_of_model())
     {
         i.setPosition(My_Vector3D(trans.toMatrix()*i.position()));
     }
+    model.sample_restart_size();
     sample_models.push_back(model);
 }
 
+//将需支撑的三角面片整合为连续的区域
 void My_Opengl::calculate_supperts()
 {
-
     //可优化，直接对需要支撑的区域进行遍历
-
-
-
     if(!meshs_around.isEmpty())
     {
-        QVector<bool> mesh_is_counted(models[0].size(),true);
+        QVector<bool> mesh_is_counted(models[0].size(),true); //保存面片是否统计
         for(int i=0;i!=models[0].size();++i)
         {
             //若未进行统计且需要支撑
-            if(mesh_is_counted[i]&&normal_bool[i])
+            if(normal_bool[i] && mesh_is_counted[i])
             {
                 QVector<int> vec_supperts;     //一个需要支撑的区域
-                count_supperts(i,vec_supperts);
-                need_supperts_aeras.push_back(vec_supperts);
+                vec_supperts.push_back(i);
+                mesh_is_counted[i]=false;
+
+                count_supperts(i,vec_supperts,mesh_is_counted);
+                if(vec_supperts.size()>1)
+                    need_supperts_aeras.push_back(vec_supperts);
+            }
+        }
+    }
+    emit send_supperts_num(need_supperts_aeras.size());
+
+}
+//合成支撑区域 递归子程序
+void My_Opengl::count_supperts(int i,QVector<int> &vec_supperts ,QVector<bool> &mesh_is_counted)
+{
+    //可优化
+    for(auto num:meshs_around[i])
+    {
+        //若未进行统计且需要支撑
+        if(mesh_is_counted[num] && normal_bool[num])
+        {
+            vec_supperts.push_back(num);
+            mesh_is_counted[num]=false;
+            count_supperts(num,vec_supperts,mesh_is_counted);
+        }
+    }
+
+}
+
+//将区域投影到x_y轴，并寻找支撑点
+void My_Opengl::find_supperts_point()
+{
+    auto & vertexs=models[0].vertexs_of_model();
+    for(auto &ares:need_supperts_aeras)
+    {
+        float x_min=9999.0f,x_max=-9999.0f,z_min=9999.0f,z_max=-9999.0f;
+        //寻找边界
+        for(auto i:ares)
+        {
+            for(int j=0;j!=3;++j)
+            {
+                if(x_max<vertexs[3*i+j].position().x())
+                    x_max=vertexs[3*i+j].position().x();
+                else if(x_min>vertexs[3*i+j].position().x())
+                    x_min=vertexs[3*i+j].position().x();
+
+                if(z_max<vertexs[3*i+j].position().z())
+                    z_max=vertexs[3*i+j].position().z();
+                else if(z_min>vertexs[3*i+j].position().z())
+                    z_min=vertexs[3*i+j].position().z();
+            }
+        }
+        // 确定支撑位置 依据支撑间隔确定支撑数目
+        int x_size=(x_max-x_min)/5+1;
+        int z_size=(z_max-z_min)/5+1;
+        float x_mid,z_mid;
+        if(x_size<2)
+            x_size=2;
+        x_mid=(x_max-x_min)/x_size;
+
+        if(z_size<2)
+            z_size=2;
+        z_mid=(z_max-z_min)/x_size;
+
+        //遍历该区域所有待定支撑点
+        for(int i=1;i!=x_size;++i)
+        {
+            for(int j=1;j!=z_size;++j)
+            {
+                float x=x_min+x_mid*i;
+                float y=z_min+z_mid*j;
+                check_supperts(x,y,ares);
+            }
+        }
+    }
+}
+//对网格划分得到的支撑进行mesh匹配，并计算高度
+void My_Opengl::check_supperts(const float &x,const float &y,QVector<int>&ares)
+{
+    auto & vertexs=models[0].vertexs_of_model();
+    //向量法判断 点是否在三角形内部
+    for(auto i:ares)
+    {
+        auto x1=vertexs[3*i].position().x();
+        auto y1=vertexs[3*i].position().z();
+
+        auto x2=vertexs[3*i+1].position().x();
+        auto y2=vertexs[3*i+1].position().z();
+
+        auto x3=vertexs[3*i+2].position().x();
+        auto y3=vertexs[3*i+2].position().z();
+
+
+        //不在，继续循环
+        float d=(y-y1)*(x2-x1)-(y2-y1)*(x-x1);
+        float q=(y3-y1)*(x2-x1)-(y2-y1)*(x3-x1);
+        if(d*q>=0)
+        {
+            d=(y-y2)*(x3-x2)-(y3-y2)*(x-x2);
+            q=(y1-y2)*(x3-x2)-(y3-y2)*(x1-x2);
+            if(d*q>=0)
+            {
+                d=(y-y3)*(x1-x3)-(y1-y3)*(x-x3);
+                q=(y2-y3)*(x1-x3)-(y1-y3)*(x2-x3);
+                if(d*q>=0)
+                {
+                    //在该三角形内部
+                    X_Y_supperts x_y_position(QVector2D(x,y));
+                    x_y_position.set_mesh_num(i);
+
+                    //寻找面片中最低点
+                    int i_min=3*i;                               //mesh中y最小的点
+                    int y_min=vertexs[3*i].position().y();       //最小点的h
+                    if(y_min>vertexs[3*i+1].position().y())
+                    {
+                        y_min=vertexs[3*i+1].position().y();
+                        i_min+=1;
+                    }
+                    else if(y_min>vertexs[3*i+2].position().y())
+                    {
+                        y_min=vertexs[3*i+2].position().y();
+                        i_min+=2;
+                    }
+                    x_y_position.set_height(y_min);
+                    x_y_ares.push_back(x_y_position);
+
+                    break;
+                }
             }
         }
     }
 }
 
-//将需支撑的三角面片整合为连续的区域
-void My_Opengl::count_supperts(int i,QVector<int> &vec_supperts)
-{
-
-}
-
-
 //支撑整合为模型
 void My_Opengl::set_samples_trans()
 {
+    calculate_supperts();      //将需支撑的三角面片整合为连续的区域
+
+    find_supperts_point();      //将区域投影到x_y轴，并寻找支撑点
+
     QVector<My_Vector3D> sample_trans_x_z={{6,0,6},{6,0,-6},{-6,0,6},{-6,0,-6}};
+
+    for(auto& supperts_position:x_y_ares)
+    {
+        //变换支撑x_z坐标，移动至正确位置
+        Transform3D trans;
+        float x_move=supperts_position.x()/10.0-models[0].mid_x();
+        float z_move=supperts_position.z()/10.0-models[0].mid_z();
+        x_move=x_move*zoom_now;
+        z_move=z_move*zoom_now;
+        trans.setTranslation(x_move,0,z_move);
+
+        //设置支撑高度
+        float y_change=supperts_position.y_salce()/sample_models[0].size_Y();   //缩放倍数
+        trans.scale(1.0,y_change,1.0);
+        trans.translate(0.0,sample_models[0].samples_min_y(y_change),0.0);
+
+        samples_trans.push_back(trans);
+    }
     for(int i=0;i!=4;++i)
     {
         Transform3D trans;
         trans.setTranslation(sample_trans_x_z[i]);
         samples_trans.push_back(trans);
     }
+
     //合成为一整个模型
     for(int i=0;i!=samples_trans.size();++i)
     {
@@ -103,6 +242,7 @@ void My_Opengl::set_samples_trans()
            supports.push_back( Vertex(location,vector_mine));
         }
     }
+
 }
 
 //初始属性设置
@@ -237,7 +377,7 @@ void My_Opengl::initializeGL()
 //绘制
 void My_Opengl::paintGL()
 {
-    // initializeGL_model(); initializeGL_sample(); 只能放这里
+    //以下两个if添加的原因是为了initializeGL程序只运行一次
     if(flag_2)
     {
         initializeGL_model();
@@ -245,8 +385,8 @@ void My_Opengl::paintGL()
     }
     if(draw_suppports)
     {
-        set_samples_trans();
-        initializeGL_sample();
+        set_samples_trans();           //生成支撑并整合为一个模型
+        initializeGL_sample();         //支撑模型的vao vbo着色器设置
         draw_suppports=false;
     }
 
@@ -266,6 +406,8 @@ void My_Opengl::paintGL()
         }
         Draw_model();
     }
+
+    //绘制支撑
     if(supports.size_vertex())
         Draw_samples();
 
@@ -304,7 +446,7 @@ void My_Opengl::Draw_samples()
 
     my_shader_model->setUniformValue(my_viepos,m_camera.toMatrix());
     my_shader_model->setUniformValue(my_model, supports_trans.toMatrix());//设置模型变换矩阵
-    my_shader_model->setUniformValue(my_normal_model,supports_trans.toMatrix().normalMatrix());
+    my_shader_model->setUniformValue(my_normal_model,supports_trans.toMatrix().normalMatrix()); //法向量变换矩阵
 
     glDrawArrays(GL_TRIANGLES, 0, supports.size_vertex());
 
@@ -378,7 +520,6 @@ void My_Opengl::change_color()
     show_red_pre=show_red;
     if(show_red)
     {
-
         for(int i=0,j=0;i!=models[0].size_vertex();i=i+3,++j)
         {
             if(normal_bool[j])
@@ -428,7 +569,6 @@ void My_Opengl::update()
         m_transform[1].rotate(x_move, up_now);
         supports_trans.rotate(x_move, up_now);
 
-
         if(flag<90.0&&flag>-90.0)
         {
             camera_y+=y_move;
@@ -451,8 +591,8 @@ void My_Opengl::update()
     }
 
     static const float transSpeed = 0.1f;
-    My_Vector3D translation;
 
+    My_Vector3D translation;
     if (camera_left)
     {
         translation -= m_camera.right();
@@ -501,3 +641,19 @@ void My_Opengl::updata_models_vector(bool flag)
     }
 }
 
+void My_Opengl::camera_restart(float zoom_now)
+{
+    m_transform[0].rotate(-camera_y, Camera3D::LocalRight);
+    m_transform[0].rotate(-camera_x, Camera3D::LocalUp);
+
+    m_transform[1].rotate(-camera_y, Camera3D::LocalRight);
+    m_transform[1].rotate(-camera_x, Camera3D::LocalUp);
+
+    camera_x=0.0;
+    camera_y=0.0;
+
+    float y= models[0].size_Y()/(20.0/zoom_now)-10.0;
+
+    m_camera.setTranslation(0.0f,y,32.0f);
+    m_camera.setRotation(0.0f,1.0f,0.0f,0.0f);
+}

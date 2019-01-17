@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //将读入模型的信号通知opengl
     connect(this,SIGNAL(new_model_data(bool)),ui->openGLWidget,SLOT(updata_models_vector(bool)));
     connect(ui->openGLWidget,SIGNAL(new_camera(float,My_Vector3D)),this,SLOT(updata_camera_x(float,My_Vector3D)));
+    connect(ui->openGLWidget,SIGNAL(send_supperts_num(int)),this,SLOT(show_supperts_num(int)));
 
     load_sample_models();
 }
@@ -155,10 +156,6 @@ bool MainWindow::read_ASCII(QTextStream& aStream)
             float x1,y1,z1;
             aStream>>str>>x1>>y1>>z1;
 
-            //计算hash 的K值
-//            float k_xyz=x1*100+y1+z1*0.001;
-//            k.push_back(k_xyz);
-//            vertexs_around[k_xyz].push_back(i);
             if(x1>vec_size[0])
                 vec_size[0]=x1;
             else if(x1<vec_size[1])
@@ -186,15 +183,23 @@ bool MainWindow::read_ASCII(QTextStream& aStream)
         ++i;
     }
     if(str=="endsolid")
-    {
+    {      
         model.set_size(vec_size);
         x_n=x_now=model.size_X();
         y_n=y_now=model.size_Z();
         z_n=z_now=model.size_Y();
 
         model_translate();  //设置模型变换，使其位于框体正中心，若模型较大，则进行缩小
+
         ui->openGLWidget->input_model(model);
         emit new_model_data(true);         //发送信号，通知opengl可以进行渲染
+        //save_data_vertex_data();
+
+        //模型尺寸缩放设置
+        set_models_size();
+        //存储每个mesh周围的meshs
+        mesh_around_push();
+
         return true;
     }
     else
@@ -278,6 +283,7 @@ bool MainWindow::read_Binary(QDataStream& aStream)
 
         //模型尺寸缩放设置
         set_models_size();
+        //存储每个mesh周围的meshs
         mesh_around_push();
 
         return true;
@@ -444,6 +450,7 @@ void MainWindow::mid_scale_changge(float& old_zoom)
     auto y_chan=model.min_y(zoom_now)-model.min_y(old_zoom);
     y_mid-=y_chan;
     trans_model.translate(0.0f,y_chan,0.0f);           //移动至底部
+    ui->openGLWidget->set_Y_move_to_bottom(y_chan);
 }
 //设置界面显示
 void MainWindow::set_models_size()
@@ -581,7 +588,7 @@ void MainWindow::on_checkBox_clicked(bool checked)
 //视角重置
 void MainWindow::on_pushButton_3_clicked()
 {
-    ui->openGLWidget->camera_restart();
+    ui->openGLWidget->camera_restart(zoom_now);
 }
 //模型大小重置
 void MainWindow::on_pushButton_5_clicked()
@@ -653,14 +660,19 @@ void MainWindow::load_sample_models()
 //计算支撑位置并生成
 void MainWindow::on_pushButton_6_clicked()
 {
-    ui->openGLWidget->set_draw_suppports_true();
+    ui->openGLWidget->set_draw_suppports_true(zoom_now);
+}
+
+void MainWindow::show_supperts_num(int num)
+{
+    ui->spinBox_4->setValue(num);
 }
 
 //存储每个mesh周围的meshs
 void MainWindow::mesh_around_push()
 {
-    int count_wrong=0;
-    QVector<Vertex>& meshs=model.vertexs_of_model();
+    int count_1=0,count_2=0,count_3=0;
+    QVector<Vertex>& meshs=model.vertexs_of_model();         //顶点数组
     for(int i=0,z=0;i!=model.size_vertex();i=i+3,++z)
     {
         QVector<int> ver_1=vertexs_around[meshs[i].position()];
@@ -668,23 +680,33 @@ void MainWindow::mesh_around_push()
         QVector<int> ver_3=vertexs_around[meshs[i+2].position()];
 
         QMap<int,int> map_1;
+        QVector<int> vec;
         for(auto &j:ver_1)
             map_1[j]++;
         for(auto &j:ver_2)
         {
             map_1[j]++;
             if(j!=z && map_1[j]!=1)
-                meshs_around[i].push_back(j);
+                vec.push_back(j);
         }
         for(auto &j:ver_3)
         {
             map_1[j]++;
             if(j!=z && map_1[j]!=1)
-                meshs_around[i].push_back(j);
+                vec.push_back(j);
         }
-        if(meshs_around[i].size()!=3)
-            count_wrong++;
+        if(vec.size()==3)
+            count_3++;
+        else if(vec.size()==2)
+            count_2++;
+        else if(vec.size()==1)
+            count_1++;
+        meshs_around.push_back(vec);
     }
     ui->openGLWidget->set_mesh_around(meshs_around);
-    ui->spinBox->setValue(count_wrong);
+    ui->spinBox->setValue(count_1);
+    ui->spinBox_2->setValue(count_2);
+    ui->spinBox_3->setValue(count_3);
+    ui->spinBox_5->setValue(model.size_vertex()/3);
+
 }

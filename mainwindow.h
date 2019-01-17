@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QDataStream>
 #include <QMap>
+#include <QHash>
 #include "model.h"
 #include "transform_3d.h"
 #include "my_vector3d.h"
@@ -58,8 +59,9 @@ private:
     Model sample_model;
     Transform3D trans_model;
 
-    QMap <My_Vector3D,QVector<int>> vertexs_around;   //每个点周围的mesh
-    QMap <int,QVector<int>> meshs_around;       //每个mesh周围的mesh
+    //QHash <QString,QVector<int>> vertexs_around;
+    QMap <My_Vector3D,QVector<int>> vertexs_around;   //每个点所在的mesh
+    QVector <QVector<int>> meshs_around;       //每个mesh周围的mesh
 
 
     int x_last=0,y_last=0,z_last=0;
@@ -76,6 +78,8 @@ private slots:
     void updata_camera_x(float move,My_Vector3D now);
 
     void keyReleaseEvent(QKeyEvent *event);
+
+    void show_supperts_num(int num);
 
     void on_open_act_triggered();
     void on_pushButton_clicked();
